@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Total Compensation Simulator (Belgium 13.92)</title>
+  <style>
+    body { font-family: system-ui,-apple-system,Segoe UI,Roboto,Arial; margin: 24px; }
+    .wrap { max-width: 980px; margin: 0 auto; display: grid; gap: 14px; }
+    .card { border: 1px solid #e7e7e7; border-radius: 14px; padding: 16px; box-shadow: 0 1px 10px rgba(0,0,0,.04); }
+    h1 { margin: 0 0 6px; font-size: 20px; }
+    h2 { margin: 0 0 10px; font-size: 15px; }
+    .muted { color: #666; font-size: 12px; line-height: 1.4; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; margin: 10px 0; }
+    input[type="range"] { width: 100%; }
+    .pill { padding: 6px 10px; border-radius: 999px; background: #f5f5f5; font-variant-numeric: tabular-nums; }
+    .check { display: flex; gap: 10px; align-items: center; margin: 8px 0; }
+    .check input { transform: scale(1.1); }
+    .kpi { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+    .kpi .box { padding: 12px; border-radius: 12px; background: #fafafa; border: 1px solid #eee; }
+    .kpi .label { font-size: 12px; color: #555; margin-bottom: 6px; }
+    .kpi .val { font-size: 18px; font-weight: 750; font-variant-numeric: tabular-nums; }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    td { padding: 8px 6px; border-bottom: 1px solid #eee; font-variant-numeric: tabular-nums; }
+    td:first-child { color:#333; }
+    td:last-child { text-align: right; }
+    .warn { color:#8a4b00; background:#fff7e6; border:1px solid #ffe2b0; padding:10px; border-radius:12px; font-size: 12px; display:none; }
+    .disabled { opacity: .55; pointer-events: none; }
+    code { background:#f6f6f6; padding:2px 6px; border-radius:8px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Total Compensation Simulator</h1>
+      <div class="muted">
+        Belgium-style pay averaging uses <b>13.92 pay periods</b> (12 months + holiday pay + 13th month, approx).
+        Selecting <b>3 days on site</b> auto-includes car, housing, rotation, and flights.
+        Selecting <b>3 days office</b> keeps only the car.
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h2>Core inputs</h2>
+
+        <div class="row">
+          <div><b>Base salary (annual)</b></div>
+          <div class="pill">€ <span id="baseLbl"></span></div>
+        </div>
+        <input id="base" type="range" min="35000" max="120000" step="1000" value="45000" />
+
+        <div class="row">
+          <div>
+            <b>Working days / year</b>
+            <div class="muted">Used for meal vouchers. If rotation is enabled, rotation days are excluded.</div>
+          </div>
+          <div class="pill"><span id="workDaysLbl"></span> days</div>
+        </div>
+        <input id="workDays" type="range" min="180" max="240" step="1" value="220" />
+
+        <div class="row">
+          <div>
+            <b>On-site premium %</b>
+            <div class="muted">Applies only to the on-site share (not office share).</div>
+          </div>
+          <div class="pill"><span id="premiumLbl"></span>%</div>
+        </div>
+        <input id="premium" type="range" min="0" max="40" step="1" value="15" />
+
+        <div class="row">
+          <div><b>Tax rate (simple estimate)</b></div>
+          <div class="pill"><span id="taxLbl"></span>%</div>
+        </div>
+        <input id="tax" type="range" min="0" max="60" step="1" value="45" />
+
+        <div class="muted" style="margin-top:10px;">
+          Meal vouchers are fixed at <code>€6.9/day</code>. Flights (if enabled) add <code>€300/month</code> (= €3,600/year).
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Work pattern</h2>
+
+        <div class="muted" style="margin-bottom:6px;"><b>Choose one</b></div>
+
+        <div class="check">
+          <input id="onsite3" type="checkbox" />
+          <label for="onsite3"><b>3 days on site</b> (higher pay pro-rata)</label>
+        </div>
+
+        <div class="check">
+          <input id="office3" type="checkbox" />
+          <label for="office3"><b>3 days office</b> (average pay pro-rata)</label>
+        </div>
+
+        <div class="warn" id="warnBox">
+          Both options were checked — I kept only the last one you clicked.
+        </div>
+
+        <hr style="border:none;border-top:1px solid #eee;margin:12px 0;">
+
+        <h2>Benefits</h2>
+
+        <div class="check">
+          <input id="carOn" type="checkbox" />
+          <label for="carOn"><b>Car</b> (fixed €10,000/year)</label>
+        </div>
+
+        <div class="check">
+          <input id="housingOn" type="checkbox" />
+          <label for="housingOn"><b>Housing</b> (fixed €16,500/year)</label>
+        </div>
+
+        <div class="check">
+          <input id="rotation" type="checkbox" />
+          <label for="rotation"><b>Rotation</b>: 2 days/month out of office</label>
+        </div>
+
+        <div class="check">
+          <input id="flights" type="checkbox" />
+          <label for="flights"><b>Flights</b>: €300/month max (adds €3,600/year)</label>
+        </div>
+
+        <div class="muted" style="margin-top:10px;">
+          If a work pattern is selected, benefits are auto-managed per your rules.
+          You can still manually toggle benefits <i>only if no pattern is selected</i>.
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Results</h2>
+
+      <div class="kpi">
+        <div class="box">
+          <div class="label">Adjusted base (gross, annual)</div>
+          <div class="val">€ <span id="adjBaseOut"></span></div>
+        </div>
+
+        <div class="box">
+          <div class="label">Net base (annual)</div>
+          <div class="val">€ <span id="netBaseYearOut"></span></div>
+        </div>
+
+        <div class="box">
+          <div class="label">Net base (avg per pay period, 13.92)</div>
+          <div class="val">€ <span id="netBasePayOut"></span></div>
+        </div>
+      </div>
+
+      <div class="kpi" style="margin-top:10px;">
+        <div class="box">
+          <div class="label">Total compensation (gross value)</div>
+          <div class="val">€ <span id="totalOut"></span></div>
+        </div>
+
+        <div class="box">
+          <div class="label">Net-equivalent (with benefits)</div>
+          <div class="val">€ <span id="netEqOut"></span></div>
+        </div>
+
+        <div class="box">
+          <div class="label">Avg gross value per pay period (13.92)</div>
+          <div class="val">€ <span id="grossPayOut"></span></div>
+        </div>
+      </div>
+
+      <table>
+        <tr><td>Car</td><td>€ <span id="carOut"></span></td></tr>
+        <tr><td>Housing</td><td>€ <span id="houseOut"></span></td></tr>
+        <tr><td>Meal vouchers</td><td>€ <span id="mealOut"></span></td></tr>
+        <tr><td>Flights</td><td>€ <span id="flightsOut"></span></td></tr>
+        <tr><td>Rotation days / year</td><td><span id="rotDaysOut"></span> days</td></tr>
+      </table>
+    </div>
+  </div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const fmt = (n) => Math.round(n).toLocaleString("en-US");
+
+  // Belgium pay periods (approx)
+  const PAY_PERIODS = 13.92;
+
+  // Fixed values per your rules
+  const CAR_VALUE = 10000;
+  const HOUSING_VALUE = 16500;
+
+  // Other fixed rules
+  const MEAL_PER_DAY = 6.9;
+  const ROTATION_DAYS_PER_YEAR = 2 * 12; // 2 days/month
+  const FLIGHTS_PER_YEAR = 300 * 12;     // 300/month max
+
+  function enforceMutualExclusive(clickedId) {
+    const warn = $("warnBox");
+    if (clickedId === "onsite3" && $("onsite3").checked && $("office3").checked) {
+      $("office3").checked = false;
+      warn.style.display = "block"; setTimeout(() => warn.style.display = "none", 1400);
+    }
+    if (clickedId === "office3" && $("office3").checked && $("onsite3").checked) {
+      $("onsite3").checked = false;
+      warn.style.display = "block"; setTimeout(() => warn.style.display = "none", 1400);
+    }
+  }
+
+  function getShares() {
+    // Assume 5-day week
+    // - If onsite3: onsite share = 3/5, office share = 2/5
+    // - If office3: onsite share = 2/5, office share = 3/5
+    // - If none: treat as 0 onsite premium (all average)
+    if ($("onsite3").checked) return { onsite: 3/5, office: 2/5 };
+    if ($("office3").checked) return { onsite: 2/5, office: 3/5 };
+    return { onsite: 0, office: 1 };
+  }
+
+  function autoManageBenefits() {
+    const onsite = $("onsite3").checked;
+    const office = $("office3").checked;
+
+    // If a pattern is selected, lock benefits per your rules.
+    const manualAllowed = !(onsite || office);
+
+    ["carOn","housingOn","rotation","flights"].forEach(id => {
+      $(id).disabled = !manualAllowed;
+      $(id).parentElement.classList.toggle("disabled", !manualAllowed);
+    });
+
+    if (onsite) {
+      $("carOn").checked = true;
+      $("housingOn").checked = true;
+      $("rotation").checked = true;
+      $("flights").checked = true;
+    } else if (office) {
+      $("carOn").checked = true;
+      $("housingOn").checked = false;
+      $("rotation").checked = false;
+      $("flights").checked = false;
+    }
+  }
+
+  function calculate() {
+    autoManageBenefits();
+
+    const base = +$("base").value;
+    const workDays = +$("workDays").value;
+    const premiumPct = +$("premium").value / 100;
+    const tax = +$("tax").value / 100;
+
+    const shares = getShares();
+
+    // Premium applies ONLY to onsite share
+    const adjustedBase = base * (shares.office * 1 + shares.onsite * (1 + premiumPct));
+
+    const car = $("carOn").checked ? CAR_VALUE : 0;
+    const house = $("housingOn").checked ? HOUSING_VALUE : 0;
+
+    const rotationOn = $("rotation").checked;
+    const flightsOn = $("flights").checked;
+
+    const eligibleMealDays = Math.max(0, workDays - (rotationOn ? ROTATION_DAYS_PER_YEAR : 0));
+    const mealValue = eligibleMealDays * MEAL_PER_DAY;
+
+    const flightsValue = flightsOn ? FLIGHTS_PER_YEAR : 0;
+    const rotationDays = rotationOn ? ROTATION_DAYS_PER_YEAR : 0;
+
+    const totalGrossValue = adjustedBase + car + house + mealValue + flightsValue;
+
+    // Net base (cash) and net-equivalent (simple)
+    const netBaseYear = adjustedBase * (1 - tax);
+    const netBasePay = netBaseYear / PAY_PERIODS;
+    const netEquivalent = netBaseYear + car + house + mealValue + flightsValue;
+
+    // Average gross value per pay period (13.92)
+    const grossPay = totalGrossValue / PAY_PERIODS;
+
+    // Labels (inputs)
+    $("baseLbl").textContent = fmt(base);
+    $("workDaysLbl").textContent = workDays;
+    $("premiumLbl").textContent = Math.round(premiumPct * 100);
+    $("taxLbl").textContent = Math.round(tax * 100);
+
+    // Outputs (KPIs)
+    $("adjBaseOut").textContent = fmt(adjustedBase);
+    $("netBaseYearOut").textContent = fmt(netBaseYear);
+    $("netBasePayOut").textContent = fmt(netBasePay);
+
+    $("totalOut").textContent = fmt(totalGrossValue);
+    $("netEqOut").textContent = fmt(netEquivalent);
+    $("grossPayOut").textContent = fmt(grossPay);
+
+    // Breakdown table
+    $("carOut").textContent = fmt(car);
+    $("houseOut").textContent = fmt(house);
+    $("mealOut").textContent = fmt(mealValue);
+    $("flightsOut").textContent = fmt(flightsValue);
+    $("rotDaysOut").textContent = rotationDays;
+  }
+
+  function wire() {
+    const ids = ["base","workDays","premium","tax","rotation","flights","onsite3","office3","carOn","housingOn"];
+    ids.forEach(id => {
+      $(id).addEventListener("input", () => {
+        if (id === "onsite3" || id === "office3") enforceMutualExclusive(id);
+        calculate();
+      });
+      $(id).addEventListener("change", () => {
+        if (id === "onsite3" || id === "office3") enforceMutualExclusive(id);
+        calculate();
+      });
+    });
+    calculate();
+  }
+
+  wire();
+</script>
+</body>
+</html>
